@@ -1,0 +1,3 @@
+class_weighted,macro_f1,accuracy
+True,0.7604,0.8079
+False,0.7529,0.8333

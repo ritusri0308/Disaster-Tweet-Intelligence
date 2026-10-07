@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Project Data & Models (never commit raw/processed data or SQLite DB)
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Models
+models/*.joblib
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

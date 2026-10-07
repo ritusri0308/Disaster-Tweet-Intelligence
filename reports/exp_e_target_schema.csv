@@ -1,0 +1,3 @@
+target_schema,num_classes,macro_f1,accuracy
+project_5,5,0.7604,0.8079
+raw_10,10,0.7073,0.7321

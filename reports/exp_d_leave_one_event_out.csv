@@ -1,0 +1,6 @@
+held_out_event,test_samples,macro_f1,accuracy
+srilanka_floods_2017,560,0.7156,0.8536
+cyclone_idai_2019,3933,0.6955,0.7735
+hurricane_harvey_2017,9112,0.7214,0.7966
+kaikoura_earthquake_2016,2195,0.7234,0.7795
+MEAN +/- STD,15800,0.7140 +/- 0.0110,0.8079

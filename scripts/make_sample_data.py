@@ -79,7 +79,7 @@ def generate_sample_data(target_dir: Path) -> None:
     """Generate synthetic TSV files matching HumAID dataset layout."""
     print("WARNING: Generating synthetic sample dataset for testing/fallback!")
     target_dir.mkdir(parents=True, exist_ok=True)
-    
+
     random.seed(42)
     tweet_id_base = 870161518553251840
 

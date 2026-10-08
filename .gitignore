@@ -16,6 +16,7 @@ data/
 *.db
 *.sqlite
 *.sqlite3
+*.parquet
 
 # Models
 models/*.joblib

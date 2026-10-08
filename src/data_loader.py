@@ -8,13 +8,11 @@ import logging
 from pathlib import Path
 from typing import Optional, Tuple
 import pandas as pd
-import numpy as np
 
 from src.config import (
     RAW_DATA_DIR,
     RAW_DATA_ALT_DIR,
     CATEGORY_MAPPING,
-    PROJECT_CATEGORIES,
     CLASSIFICATION_TARGET
 )
 
@@ -163,7 +161,7 @@ def validate_and_clean_data(df: pd.DataFrame, target_schema: str = CLASSIFICATIO
         df = df[~test_mask].copy()
 
     df = df.drop(columns=["_norm_text"])
-    
+
     # Log class distribution and flag imbalance
     log_dataset_statistics(df)
 
@@ -173,7 +171,7 @@ def log_dataset_statistics(df: pd.DataFrame) -> None:
     """Log distribution per split and event, flagging imbalance."""
     logger.info("=== Dataset Statistics ===")
     logger.info(f"Total rows: {len(df)}")
-    
+
     split_dist = df["split"].value_counts().to_dict()
     logger.info(f"Split distribution: {split_dist}")
 

@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.config import REPORTS_DIR
 from src.data_loader import load_data
-from src.ner import extract_locations_batch, evaluate_ner
+from src.ner import extract_locations_batch
 
 def export_ner_sheet(n_samples: int = 50) -> Path:
     """Export ~50 random tweets with predicted locations for hand verification."""

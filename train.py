@@ -7,11 +7,8 @@ Usage:
 
 import argparse
 import logging
-import sys
-from pathlib import Path
 import pandas as pd
 import numpy as np
-import joblib
 
 from src.config import REPORTS_DIR, HELD_OUT_EVENTS
 from src.data_loader import load_data

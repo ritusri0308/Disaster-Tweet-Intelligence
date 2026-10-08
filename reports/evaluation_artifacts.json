@@ -1,0 +1,429 @@
+{
+  "evaluation_timestamp": "2026-10-07T15:42:51.600194+00:00",
+  "model_file": "best_classifier.joblib",
+  "test_sample_count": 8605,
+  "random_seed": 42,
+  "classes": [
+    "Damage Report",
+    "Emergency",
+    "General",
+    "Help Request",
+    "Information/Update"
+  ],
+  "overall_metrics": {
+    "accuracy": 0.8166,
+    "macro_precision": 0.7357,
+    "macro_recall": 0.8205,
+    "macro_f1": 0.7672,
+    "weighted_f1": 0.8217,
+    "expected_calibration_error": 0.0847
+  },
+  "per_class_report": {
+    "Damage Report": {
+      "precision": 0.7918486171761281,
+      "recall": 0.908939014202172,
+      "f1-score": 0.8463632827693505,
+      "support": 1197.0
+    },
+    "Emergency": {
+      "precision": 0.8772123893805309,
+      "recall": 0.944047619047619,
+      "f1-score": 0.9094036697247706,
+      "support": 840.0
+    },
+    "General": {
+      "precision": 0.6886395511921458,
+      "recall": 0.7014285714285714,
+      "f1-score": 0.6949752300070772,
+      "support": 1400.0
+    },
+    "Help Request": {
+      "precision": 0.41156462585034015,
+      "recall": 0.7378048780487805,
+      "f1-score": 0.5283842794759825,
+      "support": 328.0
+    },
+    "Information/Update": {
+      "precision": 0.9093438441919778,
+      "recall": 0.8103305785123966,
+      "f1-score": 0.8569867802906151,
+      "support": 4840.0
+    },
+    "accuracy": 0.8166182452062755,
+    "macro avg": {
+      "precision": 0.7357218055582246,
+      "recall": 0.8205101322479079,
+      "f1-score": 0.7672226484535593,
+      "support": 8605.0
+    },
+    "weighted avg": {
+      "precision": 0.8349812872372527,
+      "recall": 0.8166182452062755,
+      "f1-score": 0.8217416983530885,
+      "support": 8605.0
+    }
+  },
+  "error_sample_count": 1578,
+  "sample_misclassifications": [
+    {
+      "tweet_id": "729052093995081728",
+      "event": "canada_wildfires_2016",
+      "true_category": "Information/Update",
+      "predicted_category": "Damage Report",
+      "confidence": 0.6399,
+      "tweet_text": "RT @marcmack: Devastating wildfire in Fort McMurray, northern Alberta: 80000 evacuated, 1600 homes destroyed. Text REDCROSS to 30333 & dona",
+      "clean_text": "devastating wildfire in fort mcmurray, northern alberta: 80000 evacuated, 1600 homes destroyed. text redcross to 30333 & dona"
+    },
+    {
+      "tweet_id": "730896206377955328",
+      "event": "canada_wildfires_2016",
+      "true_category": "Information/Update",
+      "predicted_category": "Damage Report",
+      "confidence": 0.5117,
+      "tweet_text": "@1derboyYoshi yeah it was! Super amazing that each donut purchase goes to the wildfire damage. Like aaaah and the donut is so pretty ;u;",
+      "clean_text": "yeah it was! super amazing that each donut purchase goes to the wildfire damage. like aaaah and the donut is so pretty ;u;"
+    },
+    {
+      "tweet_id": "728685059704684544",
+      "event": "canada_wildfires_2016",
+      "true_category": "Information/Update",
+      "predicted_category": "General",
+      "confidence": 0.6556,
+      "tweet_text": "Thoughts and prayers?.. Ok but how about texting REDCROSS to 30333 to donate $5 for the unfortunate ppl of #FortMcMurray #wildfire #Canada",
+      "clean_text": "thoughts and prayers?.. ok but how about texting redcross to 30333 to donate $5 for the unfortunate ppl of fortmcmurray wildfire canada"
+    },
+    {
+      "tweet_id": "729415905638121472",
+      "event": "canada_wildfires_2016",
+      "true_category": "General",
+      "predicted_category": "Information/Update",
+      "confidence": 0.7363,
+      "tweet_text": "Notley will visit Fort McMurray tomorrow  amid cautious optimism re: #ymmfire",
+      "clean_text": "notley will visit fort mcmurray tomorrow amid cautious optimism re: ymmfire"
+    },
+    {
+      "tweet_id": "729408462606700544",
+      "event": "canada_wildfires_2016",
+      "true_category": "General",
+      "predicted_category": "Help Request",
+      "confidence": 0.3202,
+      "tweet_text": "Can someone not invent a large fire resistant massive inflatable water pipe 2 surround affected area then burst it",
+      "clean_text": "can someone not invent a large fire resistant massive inflatable water pipe 2 surround affected area then burst it"
+    },
+    {
+      "tweet_id": "731658396915486720",
+      "event": "canada_wildfires_2016",
+      "true_category": "Information/Update",
+      "predicted_category": "Damage Report",
+      "confidence": 0.4104,
+      "tweet_text": "RT @RobKIRO7: Next at 630 on @KIRO7Seattle - latest on wildfire near Gold Bar. Still about 100 homes may be evacd as 12 have already been.",
+      "clean_text": "next at 630 on - latest on wildfire near gold bar. still about 100 homes may be evacd as 12 have already been."
+    },
+    {
+      "tweet_id": "730016314123685889",
+      "event": "canada_wildfires_2016",
+      "true_category": "Information/Update",
+      "predicted_category": "Damage Report",
+      "confidence": 0.9962,
+      "tweet_text": "CANADA ALBERTA: #FortMacFire damage: oil firms plan restart: 88K evacuees; 2400 buildings destroyed; #WTP operating",
+      "clean_text": "canada alberta: fortmacfire damage: oil firms plan restart: 88k evacuees; 2400 buildings destroyed; wtp operating"
+    },
+    {
+      "tweet_id": "734920540213940224",
+      "event": "canada_wildfires_2016",
+      "true_category": "Information/Update",
+      "predicted_category": "Damage Report",
+      "confidence": 0.4284,
+      "tweet_text": "RT @ElectricInTX Solar will grow like wildfire in Texas homes. #solarenergy #solar #energy #Texas #solarpower",
+      "clean_text": "solar will grow like wildfire in texas homes. solarenergy solar energy texas solarpower"
+    },
+    {
+      "tweet_id": "729513654404587520",
+      "event": "canada_wildfires_2016",
+      "true_category": "Information/Update",
+      "predicted_category": "General",
+      "confidence": 0.4473,
+      "tweet_text": "RT @m_m_campbell: Not cool. The climate context for Albertas wildfires. Good perspective:  #environment #climate #y",
+      "clean_text": "not cool. the climate context for albertas wildfires. good perspective: environment climate y"
+    },
+    {
+      "tweet_id": "729969608669724672",
+      "event": "canada_wildfires_2016",
+      "true_category": "General",
+      "predicted_category": "Information/Update",
+      "confidence": 0.5329,
+      "tweet_text": "RT @tiniskwerl: #FortMacFire from #Space #Alberta 34 #Wildfires 5 #OutOfControl 23 UnderControl +1.5K #Firefighters #YMMFire #Canada :",
+      "clean_text": "fortmacfire from space alberta 34 wildfires 5 outofcontrol 23 undercontrol +1.5k firefighters ymmfire canada :"
+    },
+    {
+      "tweet_id": "731811403175202821",
+      "event": "canada_wildfires_2016",
+      "true_category": "General",
+      "predicted_category": "Damage Report",
+      "confidence": 0.4286,
+      "tweet_text": "Maybe we should just burn down our homes cuz they could be flammable and ignite Our home? Uh Wait a sec. FUCK OFF",
+      "clean_text": "maybe we should just burn down our homes cuz they could be flammable and ignite our home? uh wait a sec. fuck off"
+    },
+    {
+      "tweet_id": "734189825943801856",
+      "event": "canada_wildfires_2016",
+      "true_category": "Information/Update",
+      "predicted_category": "General",
+      "confidence": 0.5013,
+      "tweet_text": "Thank you for all of your Alberta Wildfire Relief support! Please see our Facebook page for an update:  #fortmcmurray",
+      "clean_text": "thank you for all of your alberta wildfire relief support! please see our facebook page for an update: fortmcmurray"
+    },
+    {
+      "tweet_id": "735896779766407169",
+      "event": "canada_wildfires_2016",
+      "true_category": "Information/Update",
+      "predicted_category": "Damage Report",
+      "confidence": 0.3964,
+      "tweet_text": "Were the #FortMcMurray wildfires really caused by #climatechange? Uh, no. #ymm #FortMacFire #oilsands",
+      "clean_text": "were the fortmcmurray wildfires really caused by climatechange? uh, no. ymm fortmacfire oilsands"
+    },
+    {
+      "tweet_id": "729491847823904768",
+      "event": "canada_wildfires_2016",
+      "true_category": "Information/Update",
+      "predicted_category": "Damage Report",
+      "confidence": 0.6396,
+      "tweet_text": "I added a video to a @YouTube playlist  Wildfire destroys homes in Canadian city; 80,000 ordered evacuated",
+      "clean_text": "i added a video to a playlist wildfire destroys homes in canadian city; 80,000 ordered evacuated"
+    },
+    {
+      "tweet_id": "733371987117150209",
+      "event": "canada_wildfires_2016",
+      "true_category": "Information/Update",
+      "predicted_category": "Damage Report",
+      "confidence": 0.9591,
+      "tweet_text": "RT @GiffordOttawa: ICLRs \u2018Insurers Rebuild Better Homes\u2019 helps reduce risk of loss & damage from natural hazards, including wildfire",
+      "clean_text": "iclrs \u2018insurers rebuild better homes\u2019 helps reduce risk of loss & damage from natural hazards, including wildfire"
+    },
+    {
+      "tweet_id": "729890709038374912",
+      "event": "canada_wildfires_2016",
+      "true_category": "Information/Update",
+      "predicted_category": "Damage Report",
+      "confidence": 0.6584,
+      "tweet_text": "RT @SpeedReads: Alberta premier: 90 percent of buildings survived Fort McMurray wildfire:",
+      "clean_text": "alberta premier: 90 percent of buildings survived fort mcmurray wildfire:"
+    },
+    {
+      "tweet_id": "728572767277334528",
+      "event": "canada_wildfires_2016",
+      "true_category": "Information/Update",
+      "predicted_category": "General",
+      "confidence": 0.8614,
+      "tweet_text": "Fort McMurray video shows evacuee\u2019s terrifying wildfire escape  via @torontostar..our thoughts are with you!",
+      "clean_text": "fort mcmurray video shows evacuee\u2019s terrifying wildfire escape via ..our thoughts are with you!"
+    },
+    {
+      "tweet_id": "729154799115984896",
+      "event": "canada_wildfires_2016",
+      "true_category": "General",
+      "predicted_category": "Information/Update",
+      "confidence": 0.5959,
+      "tweet_text": "RT @NEWS1130: BC Wildfire Service says they received two reports of people about to launch drones near 2 fires near Fort St. John.",
+      "clean_text": "bc wildfire service says they received two reports of people about to launch drones near 2 fires near fort st. john."
+    },
+    {
+      "tweet_id": "728909922331721728",
+      "event": "canada_wildfires_2016",
+      "true_category": "Information/Update",
+      "predicted_category": "Help Request",
+      "confidence": 0.9527,
+      "tweet_text": "@MUTTScomics @spca #Alberta - what can be done to rescue abandoned pets? They need help. #ymmfire",
+      "clean_text": "alberta - what can be done to rescue abandoned pets? they need help. ymmfire"
+    },
+    {
+      "tweet_id": "728749890570838016",
+      "event": "canada_wildfires_2016",
+      "true_category": "General",
+      "predicted_category": "Information/Update",
+      "confidence": 0.5919,
+      "tweet_text": "Hi @northwestel. Has your fibre line near High Level, Alberta, been affected by the wildfire?",
+      "clean_text": "hi . has your fibre line near high level, alberta, been affected by the wildfire?"
+    },
+    {
+      "tweet_id": "729322309056499712",
+      "event": "canada_wildfires_2016",
+      "true_category": "General",
+      "predicted_category": "Emergency",
+      "confidence": 0.3119,
+      "tweet_text": "Who was counting wild fires in N.A. two hundred years ago?",
+      "clean_text": "who was counting wild fires in n.a. two hundred years ago?"
+    },
+    {
+      "tweet_id": "729380845606207488",
+      "event": "canada_wildfires_2016",
+      "true_category": "Information/Update",
+      "predicted_category": "Damage Report",
+      "confidence": 0.7752,
+      "tweet_text": "Rachel Notley says Fort McMurray wildfire not spreading as fast as feared this weekend. Suncor facility not damaged. $SU",
+      "clean_text": "rachel notley says fort mcmurray wildfire not spreading as fast as feared this weekend. suncor facility not damaged. $su"
+    },
+    {
+      "tweet_id": "732797815248850945",
+      "event": "canada_wildfires_2016",
+      "true_category": "General",
+      "predicted_category": "Help Request",
+      "confidence": 0.988,
+      "tweet_text": "RT @Planetmosh: Wildfire festival needs your help.",
+      "clean_text": "wildfire festival needs your help."
+    },
+    {
+      "tweet_id": "730144153107988480",
+      "event": "canada_wildfires_2016",
+      "true_category": "General",
+      "predicted_category": "Information/Update",
+      "confidence": 0.4997,
+      "tweet_text": "Thanks, @planetlabs for releasing more images to help emergency crews.  #FortMacFire #FortMcMurray",
+      "clean_text": "thanks, for releasing more images to help emergency crews. fortmacfire fortmcmurray"
+    },
+    {
+      "tweet_id": "734095213061406720",
+      "event": "canada_wildfires_2016",
+      "true_category": "Information/Update",
+      "predicted_category": "Damage Report",
+      "confidence": 0.8583,
+      "tweet_text": "@crudereporter Check out how a Waterloo based #tech company is helping assess wildfire damage in Fort McMurray.",
+      "clean_text": "check out how a waterloo based tech company is helping assess wildfire damage in fort mcmurray."
+    },
+    {
+      "tweet_id": "733710390723416064",
+      "event": "canada_wildfires_2016",
+      "true_category": "Information/Update",
+      "predicted_category": "General",
+      "confidence": 0.5104,
+      "tweet_text": "RT @DrGurdeepParhar: Try to avoid human-caused forest fires",
+      "clean_text": "try to avoid human-caused forest fires"
+    },
+    {
+      "tweet_id": "733366449935421440",
+      "event": "canada_wildfires_2016",
+      "true_category": "Information/Update",
+      "predicted_category": "Damage Report",
+      "confidence": 0.8616,
+      "tweet_text": "Five things to know about Blacksand Lodge, which has been destroyed by the wildfire  #AB",
+      "clean_text": "five things to know about blacksand lodge, which has been destroyed by the wildfire ab"
+    },
+    {
+      "tweet_id": "728696836568043522",
+      "event": "canada_wildfires_2016",
+      "true_category": "Information/Update",
+      "predicted_category": "Damage Report",
+      "confidence": 0.7217,
+      "tweet_text": "Largest WILDFIRE in Albertas history has forced the residents to leave the city. The wildfire has destroyed",
+      "clean_text": "largest wildfire in albertas history has forced the residents to leave the city. the wildfire has destroyed"
+    },
+    {
+      "tweet_id": "733317393863188481",
+      "event": "canada_wildfires_2016",
+      "true_category": "General",
+      "predicted_category": "Information/Update",
+      "confidence": 0.6376,
+      "tweet_text": "#YMMFire as Premier @christyclarkbc calls for a national strategy on #wildfires good to review history.",
+      "clean_text": "ymmfire as premier calls for a national strategy on wildfires good to review history."
+    },
+    {
+      "tweet_id": "728659696962314241",
+      "event": "canada_wildfires_2016",
+      "true_category": "General",
+      "predicted_category": "Information/Update",
+      "confidence": 0.488,
+      "tweet_text": "@TheYoungTurks Syrian refugees helping out fort mac wildfire victims in Canada. Please cover this story. #FortMacFire",
+      "clean_text": "syrian refugees helping out fort mac wildfire victims in canada. please cover this story. fortmacfire"
+    },
+    {
+      "tweet_id": "729306616890187776",
+      "event": "canada_wildfires_2016",
+      "true_category": "Information/Update",
+      "predicted_category": "Help Request",
+      "confidence": 0.8675,
+      "tweet_text": "RT @sam_theplumber: Here is a comparison of the size of this out of control fire. Please donate, the people need our help #yymfire /",
+      "clean_text": "here is a comparison of the size of this out of control fire. please donate, the people need our help yymfire /"
+    },
+    {
+      "tweet_id": "730534536258289664",
+      "event": "canada_wildfires_2016",
+      "true_category": "General",
+      "predicted_category": "Damage Report",
+      "confidence": 0.7441,
+      "tweet_text": "RT @SteinTime44: So many hockey memories were destroyed my championship ring (with #BSens in 2010-11), my jersey from Ottawa :",
+      "clean_text": "so many hockey memories were destroyed my championship ring (with bsens in 2010-11), my jersey from ottawa :"
+    },
+    {
+      "tweet_id": "728897194896535552",
+      "event": "canada_wildfires_2016",
+      "true_category": "General",
+      "predicted_category": "Information/Update",
+      "confidence": 0.5545,
+      "tweet_text": "IEA: RT IEABirol: Our thoughts are with the residents and workers of Fort McMurray, Alberta, as #wildfire forces evacuation",
+      "clean_text": "iea: rt ieabirol: our thoughts are with the residents and workers of fort mcmurray, alberta, as wildfire forces evacuation"
+    },
+    {
+      "tweet_id": "729132904521990144",
+      "event": "canada_wildfires_2016",
+      "true_category": "General",
+      "predicted_category": "Help Request",
+      "confidence": 0.98,
+      "tweet_text": "Dear World, please help us.",
+      "clean_text": "dear world, please help us."
+    },
+    {
+      "tweet_id": "732691300420440064",
+      "event": "canada_wildfires_2016",
+      "true_category": "General",
+      "predicted_category": "Information/Update",
+      "confidence": 0.7982,
+      "tweet_text": "Fort McMurray Fire: Rain Could Be A Double-Edged Sword For Wildfire-Stricken Area: Firefighters near Fort McM",
+      "clean_text": "fort mcmurray fire: rain could be a double-edged sword for wildfire-stricken area: firefighters near fort mcm"
+    },
+    {
+      "tweet_id": "733307444198137856",
+      "event": "canada_wildfires_2016",
+      "true_category": "General",
+      "predicted_category": "Information/Update",
+      "confidence": 0.5201,
+      "tweet_text": "NHL player @ScottieUpshall from #ymm shares his story in @PlayersTribune. Heartfelt read w/local #fortsask mention",
+      "clean_text": "nhl player from ymm shares his story in . heartfelt read w/local fortsask mention"
+    },
+    {
+      "tweet_id": "729879161716645888",
+      "event": "canada_wildfires_2016",
+      "true_category": "Information/Update",
+      "predicted_category": "Help Request",
+      "confidence": 0.528,
+      "tweet_text": "But #Trudeau says we dont need help, its under control \u1f615 #FortMacFire #cdnpoli #abpoli",
+      "clean_text": "but trudeau says we dont need help, its under control \u1f615 fortmacfire cdnpoli abpoli"
+    },
+    {
+      "tweet_id": "728611924515131393",
+      "event": "canada_wildfires_2016",
+      "true_category": "Information/Update",
+      "predicted_category": "General",
+      "confidence": 0.6416,
+      "tweet_text": "All of Fort McMurray is under mandatory evacuation as wildfire burns out of control. Our thoughts and wishes are with Fort McMurray!",
+      "clean_text": "all of fort mcmurray is under mandatory evacuation as wildfire burns out of control. our thoughts and wishes are with fort mcmurray!"
+    },
+    {
+      "tweet_id": "729516646767972352",
+      "event": "canada_wildfires_2016",
+      "true_category": "Information/Update",
+      "predicted_category": "Help Request",
+      "confidence": 0.5437,
+      "tweet_text": "RT @ImThatGentleman: @ImThatGentleman Fort McMurray wildfire rages on. So close to my home. These people need support. Please donate\u1f64F\u1f3fE http",
+      "clean_text": "fort mcmurray wildfire rages on. so close to my home. these people need support. please donate\u1f64f\u1f37e http"
+    },
+    {
+      "tweet_id": "728616974406823936",
+      "event": "canada_wildfires_2016",
+      "true_category": "General",
+      "predicted_category": "Information/Update",
+      "confidence": 0.5284,
+      "tweet_text": "Red Cross will sink 90% of that money into their own non-profit organization though.",
+      "clean_text": "red cross will sink 90% of that money into their own non-profit organization though."
+    }
+  ]
+}

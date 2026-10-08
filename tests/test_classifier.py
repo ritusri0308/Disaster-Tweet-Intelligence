@@ -3,14 +3,12 @@ Unit tests for classifier module.
 """
 
 import tempfile
-from pathlib import Path
 import pandas as pd
 import joblib
 from src.classifier import (
     build_model_pipeline,
     evaluate_model,
-    predict_with_confidence,
-    train_and_compare_models
+    predict_with_confidence
 )
 
 def test_build_and_train_pipeline():
@@ -80,7 +78,7 @@ def test_model_save_load_round_trip():
     with tempfile.NamedTemporaryFile(suffix=".joblib", delete=False) as tmp:
         joblib.dump(pipe, tmp.name)
         loaded_pipe = joblib.load(tmp.name)
-        
+
         preds_orig = loaded_pipe.predict(["trapped injured"])
         assert len(preds_orig) == 1
 
@@ -91,7 +89,7 @@ def test_evaluate_model():
     })
     pipe = build_model_pipeline("naive_bayes")
     pipe.fit(df["clean_text"], df["target"])
-    
+
     metrics = evaluate_model(pipe, df["clean_text"], df["target"], split_name="dev")
     assert "accuracy" in metrics
     assert "macro_f1" in metrics

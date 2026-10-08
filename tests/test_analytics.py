@@ -2,7 +2,6 @@
 Unit tests for analytics module.
 """
 
-import pytest
 import pandas as pd
 from src.analytics import (
     get_category_counts,
@@ -10,7 +9,6 @@ from src.analytics import (
     get_category_urgency_crosstab,
     get_top_locations,
     get_volume_over_time,
-    get_per_event_summary,
     generate_situation_summary
 )
 

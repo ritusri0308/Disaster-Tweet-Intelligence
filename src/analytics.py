@@ -2,9 +2,8 @@
 Analytics and aggregated intelligence module for disaster tweet dashboard.
 """
 
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any
 import pandas as pd
-import numpy as np
 
 def get_category_counts(df: pd.DataFrame) -> pd.Series:
     """Get frequency counts of categories."""
@@ -18,7 +17,7 @@ def get_urgency_counts(df: pd.DataFrame) -> pd.Series:
         return pd.Series(dtype=int)
     order = ["CRITICAL", "HIGH", "MEDIUM", "LOW"]
     counts = df["urgency_level"].value_counts()
-    return counts.reindex([l for l in order if l in counts.index or True]).fillna(0).astype(int)
+    return counts.reindex([lvl for lvl in order if lvl in counts.index or True]).fillna(0).astype(int)
 
 def get_category_urgency_crosstab(df: pd.DataFrame) -> pd.DataFrame:
     """Compute category x urgency level cross-tabulation table."""
@@ -38,8 +37,8 @@ def get_top_locations(df: pd.DataFrame, top_n: int = 10) -> pd.Series:
     locs = []
     for loc_list in s:
         if isinstance(loc_list, list):
-            for l in loc_list:
-                cleaned_l = str(l).strip()
+            for loc in loc_list:
+                cleaned_l = str(loc).strip()
                 if cleaned_l:
                     locs.append(cleaned_l)
         elif isinstance(loc_list, str) and loc_list.strip():

@@ -3,9 +3,8 @@ Machine learning classifier module for disaster tweet category prediction.
 """
 
 import logging
-import json
 from pathlib import Path
-from typing import Dict, Any, List, Tuple, Optional
+from typing import Dict, Any, List, Tuple
 import pandas as pd
 import numpy as np
 import joblib
@@ -24,8 +23,7 @@ from sklearn.metrics import classification_report, confusion_matrix, precision_r
 from src.config import (
     MODEL_PATH,
     REPORTS_DIR,
-    RANDOM_SEED,
-    PROJECT_CATEGORIES
+    RANDOM_SEED
 )
 
 logger = logging.getLogger(__name__)
@@ -69,7 +67,7 @@ def evaluate_model(pipeline: Pipeline, X: pd.Series, y: pd.Series, split_name: s
     """
     y_pred = pipeline.predict(X)
     acc = accuracy_score(y, y_pred)
-    
+
     macro_p, macro_r, macro_f1, _ = precision_recall_fscore_support(y, y_pred, average="macro", zero_division=0)
     w_p, w_r, w_f1, _ = precision_recall_fscore_support(y, y_pred, average="weighted", zero_division=0)
 
@@ -127,7 +125,7 @@ def train_and_compare_models(train_df: pd.DataFrame, dev_df: pd.DataFrame, test_
         logger.info(f"Training model: {m_name}...")
         pipeline = build_model_pipeline(model_name=m_name)
         pipeline.fit(X_train, y_train)
-        
+
         dev_metrics = evaluate_model(pipeline, X_dev, y_dev, split_name="dev")
         test_metrics = evaluate_model(pipeline, X_test, y_test, split_name="test")
 
@@ -163,9 +161,9 @@ def train_and_compare_models(train_df: pd.DataFrame, dev_df: pd.DataFrame, test_
     # Save confusion matrix plot and CSV for best model on test set
     cm_array = np.array(best_test_metrics["confusion_matrix"])
     labels = best_test_metrics["labels"]
-    
+
     save_confusion_matrix_plot(cm_array, labels, REPORTS_DIR / "best_model_confusion_matrix.png")
-    cm_df = pd.DataFrame(cm_array, index=[f"True_{l}" for l in labels], columns=[f"Pred_{l}" for l in labels])
+    cm_df = pd.DataFrame(cm_array, index=[f"True_{lbl}" for lbl in labels], columns=[f"Pred_{lbl}" for lbl in labels])
     cm_df.to_csv(REPORTS_DIR / "best_model_confusion_matrix.csv")
 
     # Save metrics table
@@ -189,7 +187,7 @@ def predict_with_confidence(pipeline: Pipeline, texts: List[str]) -> List[Tuple[
         return []
 
     preds = pipeline.predict(texts)
-    
+
     if hasattr(pipeline, "predict_proba"):
         probas = pipeline.predict_proba(texts)
         confidences = np.max(probas, axis=1)

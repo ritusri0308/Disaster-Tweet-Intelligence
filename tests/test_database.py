@@ -4,8 +4,6 @@ Unit tests for database module.
 
 import tempfile
 from pathlib import Path
-import pytest
-import pandas as pd
 
 from src.database import (
     init_db,
@@ -17,7 +15,7 @@ from src.database import (
 def test_database_operations(sample_dataframe):
     with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp:
         db_path = Path(tmp.name)
-        
+
         init_db(db_path)
         count = save_processed_tweets(sample_dataframe, db_path)
         assert count == len(sample_dataframe)
@@ -38,7 +36,7 @@ def test_sql_injection_safety(sample_dataframe):
     with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp:
         db_path = Path(tmp.name)
         save_processed_tweets(sample_df, db_path)
-        
+
         df_loaded = load_processed_tweets(db_path)
         assert len(df_loaded) == len(sample_df)
         assert df_loaded.iloc[0]["text"] == sql_injection_str

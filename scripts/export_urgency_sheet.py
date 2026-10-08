@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from src.config import REPORTS_DIR
 from src.data_loader import load_data
 from src.preprocessing import preprocess_dataframe
-from src.urgency import calculate_urgency, evaluate_urgency
+from src.urgency import calculate_urgency
 
 def export_urgency_sheet(n_samples: int = 100) -> Path:
     """Export ~100 stratified random tweets for urgency hand annotation."""

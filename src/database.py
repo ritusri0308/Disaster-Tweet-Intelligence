@@ -1,12 +1,14 @@
 """
-SQLite database storage and query helper module using parameterized queries.
+SQLite database storage, schema migration, and feedback persistence module for CrisisLens.
+Uses parameterized queries exclusively.
 """
 
 import sqlite3
 import json
 import logging
 from pathlib import Path
-from typing import List, Dict, Any, Union, Optional
+from typing import Dict, Any, Union, Optional
+from datetime import datetime, timezone
 import pandas as pd
 
 from src.config import DB_PATH
@@ -27,7 +29,22 @@ CREATE TABLE IF NOT EXISTS processed_tweets (
     urgency_score REAL,
     urgency_level TEXT,
     matched_terms TEXT,
-    timestamp TEXT
+    timestamp TEXT,
+    needs TEXT,
+    geocoded_locations TEXT
+);
+"""
+
+CREATE_FEEDBACK_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS feedback (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tweet_id TEXT NOT NULL,
+    original_category TEXT,
+    corrected_category TEXT,
+    original_urgency TEXT,
+    corrected_urgency TEXT,
+    user_notes TEXT,
+    timestamp TEXT NOT NULL
 );
 """
 
@@ -38,12 +55,22 @@ def get_db_connection(db_path: Union[str, Path] = DB_PATH) -> sqlite3.Connection
     return conn
 
 def init_db(db_path: Union[str, Path] = DB_PATH) -> None:
-    """Initialize SQLite database schema."""
+    """Initialize SQLite database schema and run backward-compatible migrations."""
     with get_db_connection(db_path) as conn:
         cursor = conn.cursor()
         cursor.execute(CREATE_TABLE_SQL)
+        cursor.execute(CREATE_FEEDBACK_TABLE_SQL)
+
+        # Migration: check if 'needs' and 'geocoded_locations' exist in existing tables
+        cursor.execute("PRAGMA table_info(processed_tweets);")
+        columns = [row["name"] for row in cursor.fetchall()]
+        if "needs" not in columns:
+            cursor.execute("ALTER TABLE processed_tweets ADD COLUMN needs TEXT;")
+        if "geocoded_locations" not in columns:
+            cursor.execute("ALTER TABLE processed_tweets ADD COLUMN geocoded_locations TEXT;")
+
         conn.commit()
-    logger.info(f"Database initialized at {db_path}")
+    logger.info(f"Database initialized and migrated at {db_path}")
 
 def save_processed_tweets(df: pd.DataFrame, db_path: Union[str, Path] = DB_PATH) -> int:
     """
@@ -51,12 +78,13 @@ def save_processed_tweets(df: pd.DataFrame, db_path: Union[str, Path] = DB_PATH)
     Overwrites existing records with matching tweet_id.
     """
     init_db(db_path)
-    
+
     insert_sql = """
     INSERT OR REPLACE INTO processed_tweets (
         tweet_id, event, split, text, clean_text, raw_label, category,
-        confidence, locations, urgency_score, urgency_level, matched_terms, timestamp
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        confidence, locations, urgency_score, urgency_level, matched_terms, timestamp,
+        needs, geocoded_locations
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
     """
 
     records = []
@@ -92,9 +120,26 @@ def save_processed_tweets(df: pd.DataFrame, db_path: Union[str, Path] = DB_PATH)
 
         ts = str(row.get("timestamp", ""))
 
+        needs = row.get("needs", [])
+        if isinstance(needs, (list, set, tuple)):
+            needs_json = json.dumps(list(needs))
+        elif isinstance(needs, str):
+            needs_json = needs
+        else:
+            needs_json = "[]"
+
+        geo = row.get("geocoded_locations", [])
+        if isinstance(geo, (list, set, tuple)):
+            geo_json = json.dumps(list(geo))
+        elif isinstance(geo, str):
+            geo_json = geo
+        else:
+            geo_json = "[]"
+
         records.append((
             t_id, event, split, text, clean_text, raw_label, category,
-            confidence, locs_json, urgency_score, urgency_level, terms_json, ts
+            confidence, locs_json, urgency_score, urgency_level, terms_json, ts,
+            needs_json, geo_json
         ))
 
     with get_db_connection(db_path) as conn:
@@ -109,6 +154,7 @@ def load_processed_tweets(db_path: Union[str, Path] = DB_PATH, split: Optional[s
     """
     Load processed tweets from SQLite database into pandas DataFrame.
     """
+    init_db(db_path)
     conn = get_db_connection(db_path)
     if split:
         query = "SELECT * FROM processed_tweets WHERE split = ?"
@@ -120,19 +166,68 @@ def load_processed_tweets(db_path: Union[str, Path] = DB_PATH, split: Optional[s
 
     # Parse JSON fields safely
     if not df.empty:
-        if "locations" in df.columns:
-            df["locations"] = df["locations"].apply(lambda x: json.loads(x) if isinstance(x, str) and x.startswith("[") else [])
-        if "matched_terms" in df.columns:
-            df["matched_terms"] = df["matched_terms"].apply(lambda x: json.loads(x) if isinstance(x, str) and x.startswith("[") else [])
+        for col in ["locations", "matched_terms", "needs", "geocoded_locations"]:
+            if col in df.columns:
+                df[col] = df[col].apply(lambda x: json.loads(x) if isinstance(x, str) and x.startswith("[") else (x if isinstance(x, list) else []))
 
     return df
 
 def get_critical_reports(db_path: Union[str, Path] = DB_PATH, min_score: float = 5.5) -> pd.DataFrame:
-    """
-    Query high and critical reports (urgency_score >= min_score).
-    """
+    """Query high and critical reports (urgency_score >= min_score)."""
     conn = get_db_connection(db_path)
     query = "SELECT * FROM processed_tweets WHERE urgency_score >= ? ORDER BY urgency_score DESC"
     df = pd.read_sql_query(query, conn, params=(min_score,))
     conn.close()
     return df
+
+# Human-in-the-loop Feedback Queries
+def save_feedback(
+    tweet_id: str,
+    original_category: str,
+    corrected_category: str,
+    original_urgency: str,
+    corrected_urgency: str,
+    user_notes: str = "",
+    db_path: Union[str, Path] = DB_PATH
+) -> int:
+    """Store operator correction into feedback table using parameterized query."""
+    init_db(db_path)
+    now_utc = datetime.now(timezone.utc).isoformat()
+    sql = """
+    INSERT INTO feedback (
+        tweet_id, original_category, corrected_category,
+        original_urgency, corrected_urgency, user_notes, timestamp
+    ) VALUES (?, ?, ?, ?, ?, ?, ?);
+    """
+    with get_db_connection(db_path) as conn:
+        cursor = conn.cursor()
+        cursor.execute(sql, (
+            str(tweet_id), str(original_category), str(corrected_category),
+            str(original_urgency), str(corrected_urgency), str(user_notes), now_utc
+        ))
+        conn.commit()
+        last_id = cursor.lastrowid
+    return last_id
+
+def load_all_feedback(db_path: Union[str, Path] = DB_PATH) -> pd.DataFrame:
+    """Load all human feedback records."""
+    init_db(db_path)
+    conn = get_db_connection(db_path)
+    df = pd.read_sql_query("SELECT * FROM feedback ORDER BY id DESC", conn)
+    conn.close()
+    return df
+
+def get_feedback_stats(db_path: Union[str, Path] = DB_PATH) -> Dict[str, Any]:
+    """Summary statistics of human review feedback."""
+    df = load_all_feedback(db_path)
+    if df.empty:
+        return {"total_feedback_count": 0, "category_corrections": 0, "urgency_corrections": 0}
+
+    cat_changes = (df["original_category"] != df["corrected_category"]).sum()
+    urg_changes = (df["original_urgency"] != df["corrected_urgency"]).sum()
+
+    return {
+        "total_feedback_count": len(df),
+        "category_corrections": int(cat_changes),
+        "urgency_corrections": int(urg_changes)
+    }

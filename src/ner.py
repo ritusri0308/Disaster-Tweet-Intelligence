@@ -4,7 +4,7 @@ Named Entity Recognition (NER) module for location extraction.
 
 import logging
 import re
-from typing import List, Dict, Any, Optional
+from typing import List, Dict
 import pandas as pd
 import spacy
 

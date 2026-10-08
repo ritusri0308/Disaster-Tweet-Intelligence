@@ -1,0 +1,10 @@
+{
+  "urgent_needs_survival_recall": 0.2417,
+  "urgent_needs_sample_count": 1651,
+  "injury_medical_recall": 0.1058,
+  "injury_sample_count": 4236,
+  "infra_power_transport_recall": 0.0237,
+  "infra_sample_count": 6044,
+  "donation_recall": 0.3133,
+  "donation_sample_count": 12162
+}

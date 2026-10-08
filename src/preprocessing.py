@@ -4,9 +4,8 @@ Text cleaning and feature extraction module.
 
 import html
 import re
-from typing import Dict, Any, Union
+from typing import Dict, Any
 import pandas as pd
-import numpy as np
 
 # Regex patterns
 URL_PATTERN = re.compile(r"https?://\S+|www\.\S+", re.IGNORECASE)
@@ -28,7 +27,7 @@ def clean_tweet(text: Any) -> str:
     """
     if text is None or pd.isna(text):
         return ""
-    
+
     text = str(text)
     if not text.strip():
         return ""
@@ -70,7 +69,7 @@ def extract_single_text_features(raw_text: Any) -> Dict[str, Any]:
     has_url = 1 if URL_PATTERN.search(raw_unescaped) else 0
     is_rt = 1 if RT_PATTERN.search(raw_unescaped.strip()) or raw_unescaped.strip().startswith("RT ") else 0
     exclamation_count = raw_unescaped.count("!")
-    
+
     # Uppercase ratio
     letters = [c for c in raw_unescaped if c.isalpha()]
     if letters:

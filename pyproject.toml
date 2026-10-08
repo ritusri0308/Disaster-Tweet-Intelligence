@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "crisislens"
+version = "1.0.0"
+description = "Crisis intelligence and priority triage decision-support platform from social signals"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "CrisisLens Team"}
+]
+keywords = ["crisis-intelligence", "emergency-response", "nlp", "triage", "humaid"]
+dependencies = [
+    "pandas>=2.0.0",
+    "numpy>=1.24.0",
+    "scikit-learn>=1.2.0",
+    "spacy>=3.5.0",
+    "plotly>=5.13.0",
+    "streamlit>=1.20.0",
+    "joblib>=1.2.0",
+    "geonamescache>=1.5.0",
+    "pyarrow>=14.0.0",
+    "fastapi>=0.110.0",
+    "uvicorn>=0.28.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.2.0",
+    "pytest-cov>=4.0.0",
+    "ruff>=0.4.0",
+    "httpx>=0.27.0"
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+exclude = [
+    ".git",
+    "__pycache__",
+    "data",
+    "models",
+    "reports"
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "W"]
+ignore = ["E501", "E402"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]

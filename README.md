@@ -71,9 +71,19 @@ CrisisLens is a decision-support platform designed to transform noisy, unstructu
 5. **Reported Figures**: Extracts claimed counts such as "death toll 413" or "5 people trapped" as structured data. These are claims made in tweets, not verified counts.
 6. **Statistical Surge Detection**: Detects hourly volume spikes and critical ratio anomalies using robust median and Median Absolute Deviation (MAD) z-scores; each alert carries the top terms and most-mentioned place of its window.
 7. **Incident Aggregation**: Clusters near-duplicate tweets into disaster incidents using chunked TF-IDF cosine similarity, seeding from the most urgent tweets.
-8. **Interactive Command Center**: Streamlit light-theme command center featuring a Situation Room with activity timeline and surge markers, Chronological Replay with play/pause, Triage Queue, Geospatial Map with hotspot drill-down, Model Observatory, and a Human Review Queue.
+8. **Interactive Command Center**: Streamlit light-theme command center featuring a Situation Room with natural-language command search, Chronological Replay with time cursor playback, Priority Triage Queue with waterfall explainability, Geospatial Map with hotspot ranking, Model Observatory, and a Human Review Queue.
 9. **Model Integrity Checks**: Every model has a content fingerprint and metadata sidecar. The dataset is stamped with the model that scored it, and the dashboard and API warn when the loaded model is missing, implausibly small, or out of sync with the data.
 10. **Production REST API**: FastAPI microservice (`/health`, `/ready`, `/version`, `/analyze`, `/analyze/batch`, `/feedback`, `/surges`, `/incidents`) with Pydantic v2 schemas, optional API-key auth, and request IDs.
+
+---
+
+## 📸 Interface Preview
+
+| Situation Room | Chronological Replay Mode | Priority Triage Queue |
+| :---: | :---: | :---: |
+| ![Situation Room](docs/screenshots/situation_room.png) | ![Replay Mode](docs/screenshots/replay_mode.png) | ![Triage Queue](docs/screenshots/triage_queue.png) |
+
+*CrisisLens features a clean light design system with large readable typography, soft severity badges, and unified Plotly light charts.*
 
 ---
 

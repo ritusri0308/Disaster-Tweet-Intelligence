@@ -18,8 +18,10 @@ data/
 *.sqlite3
 *.parquet
 
-# Models
+# Models (the metadata sidecar and retraining backup describe a model that is itself not committed)
 models/*.joblib
+models/*.joblib.bak
+models/*.meta.json
 
 # IDE & OS
 .vscode/

@@ -7,6 +7,7 @@ Usage:
 
 import argparse
 import logging
+import time
 import pandas as pd
 import numpy as np
 
@@ -143,15 +144,37 @@ def run_experiments(df: pd.DataFrame) -> None:
     df_exp_e.to_csv(REPORTS_DIR / "exp_e_target_schema.csv", index=False)
     logger.info(f"Exp (e) results:\n{df_exp_e}")
 
+    # 6. Experiment (f): Word n-grams only vs word + character n-grams
+    logger.info("Exp (f): Word vs Word + Character n-grams...")
+    exp_f_results = []
+    test_df = df[df["split"] == "test"]
+    for use_char in [False, True]:
+        t0 = time.time()
+        pipe = build_model_pipeline(model_name="logistic_regression", use_char_ngrams=use_char)
+        pipe.fit(train_df["clean_text"], train_df["target"])
+        m_dev = evaluate_model(pipe, dev_df["clean_text"], dev_df["target"], split_name="dev")
+        m_test = evaluate_model(pipe, test_df["clean_text"], test_df["target"], split_name="test")
+        exp_f_results.append({
+            "features": "word + char_wb(2-5)" if use_char else "word (1-2)",
+            "dev_macro_f1": m_dev["macro_f1"],
+            "test_macro_f1": m_test["macro_f1"],
+            "test_accuracy": m_test["accuracy"],
+            "train_seconds": round(time.time() - t0, 1)
+        })
+    df_exp_f = pd.DataFrame(exp_f_results)
+    df_exp_f.to_csv(REPORTS_DIR / "exp_f_char_ngrams.csv", index=False)
+    logger.info(f"Exp (f) results:\n{df_exp_f}")
+
     logger.info("All experiments completed successfully! Results saved to reports/")
 
 def main():
     parser = argparse.ArgumentParser(description="Train classification models and optionally run experiments.")
     parser.add_argument("--experiments", action="store_true", help="Run model comparison experiments (ablation & leave-one-event-out).")
+    parser.add_argument("--demo", action="store_true", help="Use synthetic demo data if no HumAID TSV files are found.")
     args = parser.parse_args()
 
     logger.info("Loading and cleaning raw dataset for training...")
-    df = load_data()
+    df = load_data(allow_synthetic=True if args.demo else None)
     df = preprocess_dataframe(df)
 
     train_df = df[df["split"] == "train"]

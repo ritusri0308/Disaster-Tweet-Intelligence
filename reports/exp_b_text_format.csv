@@ -1,3 +1,3 @@
 text_format,macro_f1,accuracy
-raw_unescaped_text,0.7613,0.8088
-clean_text,0.7604,0.8079
+raw_unescaped_text,0.7608,0.8079
+clean_text,0.7577,0.8054

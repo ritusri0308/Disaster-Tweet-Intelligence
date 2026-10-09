@@ -37,10 +37,8 @@ jobs:
         run: |
           pytest tests/test_branding.py
 
-      - name: Run Test Suite with Coverage
+      # One run: tests are isolated from the real models/ and reports/ directories (see tests/conftest.py),
+      # and the suite fails if coverage of src/ and api/ drops below 80%.
+      - name: Run Test Suite with Coverage (>=80%)
         run: |
-          pytest --cov=src --cov-report=term-missing --cov-report=xml
-
-      - name: Check Coverage Threshold (>=80%)
-        run: |
-          pytest --cov=src --cov-fail-under=80
+          pytest --cov=src --cov=api --cov-report=term-missing --cov-report=xml --cov-fail-under=80

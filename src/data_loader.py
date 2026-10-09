@@ -5,11 +5,13 @@ Data loading and dataset validation module.
 import csv
 import html
 import logging
+import os
 from pathlib import Path
 from typing import Optional, Tuple
 import pandas as pd
 
 from src.config import (
+    ALLOW_SYNTHETIC_ENV,
     RAW_DATA_DIR,
     RAW_DATA_ALT_DIR,
     CATEGORY_MAPPING,
@@ -56,19 +58,32 @@ def parse_filename_split_event(file_path: Path) -> Tuple[str, str]:
         event = stem
     return event, split
 
-def load_all_tsvs(raw_dir: Optional[Path] = None) -> pd.DataFrame:
+def _synthetic_allowed(allow_synthetic: Optional[bool]) -> bool:
+    """Synthetic demo data is opt-in: explicit argument first, then the CRISISLENS_ALLOW_SYNTHETIC env flag."""
+    if allow_synthetic is not None:
+        return allow_synthetic
+    return os.environ.get(ALLOW_SYNTHETIC_ENV, "").strip().lower() in {"1", "true", "yes"}
+
+def load_all_tsvs(raw_dir: Optional[Path] = None, allow_synthetic: Optional[bool] = None) -> pd.DataFrame:
     """
     Recursively discover and load all raw TSV files from raw_dir.
+
+    If no TSVs exist this raises FileNotFoundError rather than quietly training on fake data.
+    Pass ``allow_synthetic=True`` (or set CRISISLENS_ALLOW_SYNTHETIC=1, or use the ``--demo`` CLI flag)
+    to generate a small synthetic dataset for demos and smoke tests.
     """
     if raw_dir is None:
         raw_dir = find_raw_data_dir()
 
-    if not raw_dir.exists():
-        raw_dir.mkdir(parents=True, exist_ok=True)
-
-    tsv_files = list(raw_dir.rglob("*.tsv"))
+    tsv_files = list(raw_dir.rglob("*.tsv")) if raw_dir.exists() else []
     if not tsv_files:
-        logger.warning(f"No TSV files found in {raw_dir}. Creating synthetic sample data...")
+        if not _synthetic_allowed(allow_synthetic):
+            raise FileNotFoundError(
+                f"No HumAID TSV files found in {raw_dir}. Place the dataset under data/raw/events_set1/ "
+                "(see README), or pass --demo / set CRISISLENS_ALLOW_SYNTHETIC=1 to use synthetic demo data."
+            )
+        logger.warning(f"No TSV files found in {raw_dir}. Creating synthetic sample data (demo mode)...")
+        raw_dir.mkdir(parents=True, exist_ok=True)
         from scripts.make_sample_data import generate_sample_data
         generate_sample_data(raw_dir)
         tsv_files = list(raw_dir.rglob("*.tsv"))
@@ -188,8 +203,12 @@ def log_dataset_statistics(df: pd.DataFrame) -> None:
         ratio = max_cat / max(min_cat, 1)
         logger.info(f"Class imbalance ratio (max/min): {ratio:.2f}x")
 
-def load_data(raw_dir: Optional[Path] = None, target_schema: str = CLASSIFICATION_TARGET) -> pd.DataFrame:
+def load_data(
+    raw_dir: Optional[Path] = None,
+    target_schema: str = CLASSIFICATION_TARGET,
+    allow_synthetic: Optional[bool] = None
+) -> pd.DataFrame:
     """High-level function to load and validate dataset."""
-    raw_df = load_all_tsvs(raw_dir)
+    raw_df = load_all_tsvs(raw_dir, allow_synthetic=allow_synthetic)
     clean_df = validate_and_clean_data(raw_df, target_schema=target_schema)
     return clean_df

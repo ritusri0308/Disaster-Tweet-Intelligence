@@ -12,6 +12,17 @@ from src.config import URGENCY_KEYWORDS
 
 logger = logging.getLogger(__name__)
 
+def _compile_keywords(keywords):
+    """Pre-compile one word-boundary regex per keyword (each keyword is scored independently)."""
+    return [(kw, re.compile(r"\b" + re.escape(kw) + r"\b")) for kw in keywords]
+
+_CRITICAL_PATTERNS = _compile_keywords(URGENCY_KEYWORDS["critical"])
+_HIGH_PATTERNS = _compile_keywords(URGENCY_KEYWORDS["high"])
+_MEDIUM_PATTERNS = _compile_keywords(URGENCY_KEYWORDS["medium"])
+_CASUALTY_PATTERNS = _compile_keywords(URGENCY_KEYWORDS.get("casualty", []))
+_SOS_PATTERN = re.compile(r"\bsos\b")
+CASUALTY_POINTS = 2.0
+
 # Donation / Retweet damping patterns
 DONATION_PATTERNS = [
     r"\bdonate\b", r"\bdonation\b", r"\bfundraiser\b", r"\btext to donate\b",
@@ -45,9 +56,8 @@ def calculate_urgency_breakdown(
     breakdown = []
 
     # 1. Critical keyword matches (+3.5 each)
-    for kw in URGENCY_KEYWORDS["critical"]:
-        pattern = r"\b" + re.escape(kw) + r"\b"
-        if re.search(pattern, text_lower):
+    for kw, pattern in _CRITICAL_PATTERNS:
+        if pattern.search(text_lower):
             score += 3.5
             tag = f"critical_kw:{kw}"
             matched_terms.append(tag)
@@ -58,9 +68,8 @@ def calculate_urgency_breakdown(
             })
 
     # 2. High keyword matches (+2.0 each)
-    for kw in URGENCY_KEYWORDS["high"]:
-        pattern = r"\b" + re.escape(kw) + r"\b"
-        if re.search(pattern, text_lower):
+    for kw, pattern in _HIGH_PATTERNS:
+        if pattern.search(text_lower):
             score += 2.0
             tag = f"high_kw:{kw}"
             matched_terms.append(tag)
@@ -71,9 +80,8 @@ def calculate_urgency_breakdown(
             })
 
     # 3. Medium keyword matches (+1.0 each)
-    for kw in URGENCY_KEYWORDS["medium"]:
-        pattern = r"\b" + re.escape(kw) + r"\b"
-        if re.search(pattern, text_lower):
+    for kw, pattern in _MEDIUM_PATTERNS:
+        if pattern.search(text_lower):
             score += 1.0
             tag = f"medium_kw:{kw}"
             matched_terms.append(tag)
@@ -83,8 +91,22 @@ def calculate_urgency_breakdown(
                 "description": f"Advisory / infrastructure impact indicator: '{kw}'"
             })
 
+    # 3b. Casualty reports (scored once, however many terms match). This only lifts reports that nothing else
+    # scored ("killed 83"): a critical keyword such as "dead" or "trapped" already carries the severity, and
+    # counting "killed" on top would double-count it and push death-toll news up to CRITICAL.
+    has_critical_signal = any(t.startswith("critical_kw:") for t in matched_terms)
+    casualty_hits = [kw for kw, pattern in _CASUALTY_PATTERNS if pattern.search(text_lower)]
+    if casualty_hits and not has_critical_signal:
+        score += CASUALTY_POINTS
+        matched_terms.extend(f"casualty_kw:{kw}" for kw in casualty_hits)
+        breakdown.append({
+            "signal": f"Casualty Report ({', '.join(casualty_hits[:3])})",
+            "points": CASUALTY_POINTS,
+            "description": "Reported deaths or fatalities; severity context rather than an active call for help"
+        })
+
     # 4. Text feature signals
-    if re.search(r"\bsos\b", text_lower):
+    if _SOS_PATTERN.search(text_lower):
         if "critical_kw:sos" not in matched_terms:
             score += 2.0
             matched_terms.append("signal:sos")

@@ -1,5 +1,5 @@
 model_name,dev_accuracy,dev_macro_f1,dev_weighted_f1,test_accuracy,test_macro_f1,test_weighted_f1
-naive_bayes,0.7905,0.7072,0.7839,0.801,0.7125,0.7942
-logistic_regression,0.8079,0.7604,0.8134,0.8166,0.7672,0.8217
-linear_svm,0.8369,0.7563,0.8279,0.8429,0.764,0.8339
-random_forest,0.8172,0.7556,0.816,0.8275,0.7607,0.8254
+naive_bayes,0.7919,0.7051,0.785,0.8008,0.7098,0.7937
+logistic_regression,0.8054,0.7577,0.8109,0.8177,0.7674,0.8228
+linear_svm,0.8355,0.7594,0.8274,0.8425,0.7644,0.8335
+random_forest,0.8192,0.7598,0.8175,0.8265,0.7581,0.8236

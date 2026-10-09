@@ -55,7 +55,7 @@ def test_extract_needs_batch():
     assert batch[1] == []
     assert "Rescue/Evacuation" in batch[2]
 
-def test_evaluate_needs_against_raw_labels():
+def test_evaluate_needs_against_raw_labels(tmp_path):
     df = pd.DataFrame([
         {
             "raw_label": "requests_or_urgent_needs",
@@ -70,6 +70,20 @@ def test_evaluate_needs_against_raw_labels():
             "needs": ["Medical"]
         }
     ])
-    eval_res = evaluate_needs_against_raw_labels(df)
+    eval_res = evaluate_needs_against_raw_labels(df, reports_dir=tmp_path)
     assert "urgent_needs_survival_recall" in eval_res
     assert eval_res["urgent_needs_survival_recall"] == 0.5
+    assert (tmp_path / "needs_evaluation.json").exists()
+    assert eval_res["tweets_without_any_need_pct"] == round(100.0 / 3, 2)
+
+def test_extract_needs_expanded_lexicon():
+    assert "Transport/Roads" in extract_needs("Roads closed and a bridge washed out near the river")
+    assert "Power/Utilities" in extract_needs("Millions are without power after the storm")
+    assert "Communication" in extract_needs("Internet down and no cell service since last night")
+    assert "Missing persons" in extract_needs("Two people still missing after the flash flood")
+    assert "Water" in extract_needs("No water in the neighbourhood for three days")
+    # typographic apostrophe is normalised
+    assert "Missing persons" in extract_needs("We can’t find my brother anywhere")
+
+def test_extract_needs_does_not_fire_on_neutral_text():
+    assert extract_needs("Thoughts and prayers for everyone watching the storm coverage") == []

@@ -4,9 +4,22 @@ Model explainability, token attribution, and text highlighting module for Crisis
 
 import html
 import re
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Optional, Tuple
 import numpy as np
-from sklearn.pipeline import Pipeline
+from sklearn.pipeline import FeatureUnion, Pipeline
+
+def _display_feature_name(name: str, is_union: bool) -> Optional[str]:
+    """
+    Name to show for a TF-IDF feature, or None to hide it.
+
+    Pipelines that combine word and character n-grams (a FeatureUnion) prefix names with ``word__`` /
+    ``char__``. Character fragments are meaningless to an operator, so only word features are shown.
+    """
+    if not is_union:
+        return name
+    if name.startswith("word__"):
+        return name[len("word__"):]
+    return None
 
 def explain_classification(
     pipeline: Pipeline,
@@ -16,7 +29,7 @@ def explain_classification(
     """
     Compute token/feature attributions for the predicted class.
     For linear models: feature contribution = tfidf_value * coefficient.
-    For non-linear models: uses surrogate Logistic Regression.
+    For non-linear models no per-token weights exist: ``is_surrogate`` is True and the feature lists are empty.
     """
     if not clean_text or not clean_text.strip():
         return {
@@ -31,6 +44,7 @@ def explain_classification(
 
     tfidf = pipeline.named_steps.get("tfidf")
     clf = pipeline.named_steps.get("classifier")
+    is_union = isinstance(tfidf, FeatureUnion)
 
     feature_names = np.array(tfidf.get_feature_names_out())
     text_vec = tfidf.transform([clean_text])
@@ -73,14 +87,14 @@ def explain_classification(
             clf_classes = list(clf.classes_)
 
     if coef_matrix is None:
-        # Fall back to surrogate linear model
-        is_surrogate = True
+        # Non-linear model (e.g. random forest): there are no per-token weights to report. Return no
+        # attributions rather than inventing one; callers check ``is_surrogate`` to explain why.
         return {
             "predicted_class": pred_class,
             "confidence": confidence,
             "top2_margin": round(top2_margin, 4),
             "probabilities": prob_dict,
-            "top_positive_features": [(clean_text.split()[0], 0.5)] if clean_text.split() else [],
+            "top_positive_features": [],
             "top_negative_features": [],
             "is_surrogate": True,
             "needs_human_review": needs_human_review
@@ -96,7 +110,9 @@ def explain_classification(
 
     feature_scores = []
     for idx in active_indices:
-        token = feature_names[idx]
+        token = _display_feature_name(str(feature_names[idx]), is_union)
+        if token is None:
+            continue
         val = text_arr[idx]
         weight = class_coefs[idx]
         contribution = float(round(val * weight, 4))
@@ -119,6 +135,9 @@ def explain_classification(
         "needs_human_review": needs_human_review
     }
 
+# Highlight kinds in priority order: a place beats an urgency trigger, which beats a classifier token.
+_HIGHLIGHT_PRIORITY = ("loc", "urg", "feat")
+
 def highlight_tweet_tokens(
     raw_text: str,
     extracted_locations: List[str],
@@ -126,34 +145,51 @@ def highlight_tweet_tokens(
     top_features: List[Tuple[str, float]]
 ) -> str:
     """
-    Format raw tweet text with safe HTML span badges:
-    - Cyan pill for Locations
-    - Red pill for Urgency triggers
-    - Yellow pill for positive classifier tokens
+    Format raw tweet text with safe HTML highlight spans (styled by the ``cl-hl--*`` theme classes):
+    - ``loc``: locations
+    - ``urg``: urgency triggers
+    - ``feat``: positive classifier tokens
+
+    Matches are located on the *unescaped* text and the output is built in one pass with every segment
+    escaped separately, so neither tweet content nor a search term can corrupt the markup.
     """
     if not raw_text:
         return ""
 
-    escaped = html.escape(str(raw_text))
+    text = str(raw_text)
 
-    # Highlight locations
-    for loc in extracted_locations:
-        if loc and len(loc) > 1:
-            pat = re.compile(r"\b(" + re.escape(loc) + r")\b", re.IGNORECASE)
-            escaped = pat.sub(r'<span style="background-color:rgba(34,211,238,0.25);border:1px solid #22D3EE;color:#22D3EE;padding:1px 5px;border-radius:4px;font-weight:600;">\1 📍</span>', escaped)
-
-    # Highlight urgency keywords
+    terms_by_kind = {
+        "loc": [str(loc) for loc in extracted_locations if loc and len(str(loc)) > 1],
+        "urg": [],
+        "feat": [str(tok) for tok, _ in top_features if tok and len(str(tok)) > 1],
+    }
     for item in matched_urgency_terms:
-        kw = item.split(":")[-1] if ":" in item else item
+        kw = str(item).split(":")[-1] if ":" in str(item) else str(item)
         if kw and len(kw) > 1:
-            pat = re.compile(r"\b(" + re.escape(kw) + r")\b", re.IGNORECASE)
-            escaped = pat.sub(r'<span style="background-color:rgba(239,68,68,0.25);border:1px solid #EF4444;color:#EF4444;padding:1px 5px;border-radius:4px;font-weight:600;">\1 ⚠️</span>', escaped)
+            terms_by_kind["urg"].append(kw)
 
-    # Highlight top classifier tokens
-    for token, weight in top_features:
-        if token and len(token) > 2 and token.lower() not in escaped.lower():
-            continue
-        pat = re.compile(r"\b(" + re.escape(token) + r")\b", re.IGNORECASE)
-        escaped = pat.sub(r'<span style="background-color:rgba(234,179,8,0.2);border:1px solid #EAB308;color:#FDE047;padding:1px 4px;border-radius:3px;">\1</span>', escaped)
+    spans: List[Tuple[int, int, str]] = []
+    taken = np.zeros(len(text) + 1, dtype=bool)
+    for kind in _HIGHLIGHT_PRIORITY:
+        # Longest terms first so "collapsed building" wins over "building"
+        for term in sorted(set(terms_by_kind[kind]), key=len, reverse=True):
+            pattern = re.compile(r"(?<!\w)" + re.escape(term) + r"(?!\w)", re.IGNORECASE)
+            for m in pattern.finditer(text):
+                if not taken[m.start():m.end()].any():
+                    taken[m.start():m.end()] = True
+                    spans.append((m.start(), m.end(), kind))
 
-    return f'<div style="background:#111827;border:1px solid #1F2A3D;padding:14px;border-radius:8px;font-size:15px;line-height:1.6;color:#E6EDF7;">{escaped}</div>'
+    def _segment(s: str) -> str:
+        # Newlines become <br>: a blank line would end the HTML block when Streamlit renders it as markdown.
+        return html.escape(s).replace("\r\n", "\n").replace("\r", "\n").replace("\n", "<br>")
+
+    spans.sort()
+    out: List[str] = []
+    pos = 0
+    for start, end, kind in spans:
+        out.append(_segment(text[pos:start]))
+        out.append(f'<span class="cl-hl cl-hl--{kind}">{_segment(text[start:end])}</span>')
+        pos = end
+    out.append(_segment(text[pos:]))
+
+    return f'<div class="cl-tweet">{"".join(out)}</div>'

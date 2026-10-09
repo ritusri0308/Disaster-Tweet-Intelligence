@@ -65,13 +65,15 @@ CrisisLens is a decision-support platform designed to transform noisy, unstructu
 ## 🚀 Key Capabilities
 
 1. **Category Triage**: Classifies unstructured social dispatches into 5 operational categories (`Emergency`, `Help Request`, `Damage Report`, `Information/Update`, `General`).
-2. **Offline Geospatial Resolution**: Resolves extracted entity mentions (spaCy `en_core_web_sm`) to latitude/longitude coordinates using `geonamescache` and disaster-specific geographic priors. Filters false-positive noise words (e.g. "Truly").
-3. **Multi-Label Humanitarian Needs**: Identifies critical needs (`Medical`, `Water`, `Food`, `Shelter`, `Rescue/Evacuation`, `Power/Utilities`, `Transport/Roads`, `Communication`, `Missing persons`, `Donations/Volunteering`).
-4. **Explainable Priority Urgency**: Rule-based scoring engine producing bounded priority scores (0 to 10), severity levels (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`), and waterfall attributions. Features damping rules for donation campaigns.
-5. **Statistical Surge Detection**: Detects hourly volume spikes and critical ratio anomalies using robust median and Median Absolute Deviation (MAD) z-scores.
-6. **Incident Aggregation**: Clusters near-duplicate tweets into disaster incidents using chunked TF-IDF cosine similarity.
-7. **Interactive Command Center**: Streamlit dark-mode command center featuring Situation Room, Chronological Replay, Triage Queue, Geospatial Map, and Model Diagnostics.
-8. **Production REST API**: FastAPI microservice (`/health`, `/version`, `/analyze`, `/analyze/batch`) with Pydantic v2 schemas.
+2. **Offline Geospatial Resolution**: Resolves extracted entity mentions (spaCy `en_core_web_sm`) to latitude/longitude coordinates using `geonamescache`, a small curated list of towns and islands, and disaster-specific geographic priors. Countries and US states take precedence over same-named towns (so "Mexico" is the country, not a town in the Philippines), storm names and macro-regions are never plotted, and low-confidence matches keep their name but are not drawn on the map.
+3. **Multi-Label Humanitarian Needs**: Identifies critical needs (`Medical`, `Water`, `Food`, `Shelter`, `Rescue/Evacuation`, `Power/Utilities`, `Transport/Roads`, `Communication`, `Missing persons`, `Donations/Volunteering`) with phrase lexicons, evaluated against HumAID labels as proxies in `reports/needs_evaluation.json`.
+4. **Explainable Priority Urgency**: Rule-based scoring engine producing bounded priority scores (0 to 10), severity levels (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`), and waterfall attributions. Features damping rules for donation campaigns, and a casualty-report signal that lifts death-toll news to MEDIUM without double-counting or making it CRITICAL.
+5. **Reported Figures**: Extracts claimed counts such as "death toll 413" or "5 people trapped" as structured data. These are claims made in tweets, not verified counts.
+6. **Statistical Surge Detection**: Detects hourly volume spikes and critical ratio anomalies using robust median and Median Absolute Deviation (MAD) z-scores; each alert carries the top terms and most-mentioned place of its window.
+7. **Incident Aggregation**: Clusters near-duplicate tweets into disaster incidents using chunked TF-IDF cosine similarity, seeding from the most urgent tweets.
+8. **Interactive Command Center**: Streamlit light-theme command center featuring a Situation Room with activity timeline and surge markers, Chronological Replay with play/pause, Triage Queue, Geospatial Map with hotspot drill-down, Model Observatory, and a Human Review Queue.
+9. **Model Integrity Checks**: Every model has a content fingerprint and metadata sidecar. The dataset is stamped with the model that scored it, and the dashboard and API warn when the loaded model is missing, implausibly small, or out of sync with the data.
+10. **Production REST API**: FastAPI microservice (`/health`, `/ready`, `/version`, `/analyze`, `/analyze/batch`, `/feedback`, `/surges`, `/incidents`) with Pydantic v2 schemas, optional API-key auth, and request IDs.
 
 ---
 
@@ -104,22 +106,45 @@ python -m spacy download en_core_web_sm
 
 | Command | Description |
 | :--- | :--- |
-| `python run_pipeline.py` | Runs end-to-end data ingestion, classification, NER, geocoding, needs, and urgency pipeline; generates Parquet, CSV, and SQLite. |
-| `python train.py` | Trains classifier suite (Naive Bayes, Logistic Regression, Linear SVM, Random Forest) and saves best model by Macro-F1. |
-| `python train.py --experiments` | Executes ablation and Leave-One-Event-Out cross-validation experiments. |
+| `python run_pipeline.py` | Runs end-to-end data ingestion, classification, NER, geocoding, needs, and urgency pipeline; generates Parquet, CSV, and SQLite, stamped with the model version. Add `--demo` to use synthetic sample data when the HumAID files are absent. |
+| `python train.py` | Trains classifier suite (Naive Bayes, Logistic Regression, Linear SVM, Random Forest) and saves the best model by dev Macro-F1 (models within 0.005 are tied and the simpler one wins). Also writes `models/best_classifier.meta.json`. |
+| `python train.py --experiments` | Executes ablation and Leave-One-Event-Out experiments, including word vs word+character n-grams. |
 | `python evaluate.py` | Generates ROC/PR curves, reliability calibration data, and per-event test metrics into `reports/`. |
-| `python retrain_with_feedback.py` | Ingests operator corrections from SQLite and retrains production model with regression safeguards. |
+| `python retrain_with_feedback.py` | Applies operator corrections (train-split relabels and live API feedback) and retrains with a regression safeguard. Dev/test corrections are never trained on. |
 | `streamlit run app.py` | Launches the Streamlit Command Center GUI at `http://localhost:8501`. |
 | `uvicorn api.main:app --port 8000` | Launches the FastAPI REST service at `http://localhost:8000`. |
-| `pytest --cov=src` | Executes the complete offline unit test suite. |
+| `pytest --cov=src --cov=api` | Executes the offline test suite. Tests run against throwaway temp directories and never touch `models/` or `reports/`. |
+
+After retraining a model, re-run `python run_pipeline.py` and `python evaluate.py` so the dashboard data and evaluation reports describe the model that is loaded.
+
+---
+
+## 🔧 Configuration
+
+All settings are optional environment variables (see `.env.example`).
+
+| Variable | Purpose |
+| :--- | :--- |
+| `CRISISLENS_DATA_DIR`, `CRISISLENS_MODELS_DIR`, `CRISISLENS_REPORTS_DIR` | Redirect where data, models and reports live (defaults: `data/`, `models/`, `reports/`). |
+| `CRISISLENS_API_KEY` | When set, `/analyze`, `/analyze/batch`, `/feedback`, `/surges` and `/incidents` require an `X-API-Key` header. |
+| `CRISISLENS_CORS_ORIGINS` | Comma-separated browser origins allowed to call the API (CORS is off when unset). |
+| `CRISISLENS_ALLOW_SYNTHETIC` | Same as `--demo`: permit synthetic data when no HumAID TSVs exist. Without it the pipeline stops with a clear error instead of silently training on fake data. |
+| `CRISISLENS_MIN_VOCAB` | Models with fewer vocabulary terms are reported as `degraded` (default 1000). |
 
 ---
 
 ## 📡 REST API Reference
 
 ### Health & Metadata
-- **`GET /health`**: Returns service status and model loading state.
-- **`GET /version`**: Returns service version, dataset provenance, and disclaimer.
+- **`GET /health`**: Returns `healthy`, `degraded` (model implausibly small) or `unavailable` (no model), plus the model version and vocabulary size.
+- **`GET /ready`**: Readiness probe; `200` only when a healthy model is loaded, otherwise `503`.
+- **`GET /version`**: Returns service version, dataset provenance, model version, and disclaimer.
+
+### Operations
+- **`POST /analyze`** and **`POST /analyze/batch`** (max 500): classify, geocode, extract needs and figures, and score urgency. Batches run in one classifier pass. Both return `503` when no model is loaded rather than guessing a category.
+- **`POST /feedback`**: record an operator correction (category and urgency) with the tweet text so it can be used by `retrain_with_feedback.py`.
+- **`GET /surges?event=&limit=`** and **`GET /incidents?event=&limit=`**: surge alerts and ranked incident clusters from the processed dataset.
+- Every response carries `X-Request-ID` and `X-Process-Time-ms` headers.
 
 ### Analyze Single Dispatch
 ```bash
@@ -141,9 +166,12 @@ curl -X POST "http://localhost:8000/analyze" \
   "urgency_level": "CRITICAL",
   "locations": ["Houston Central"],
   "geocoded_locations": [
-    {"name": "Houston", "lat": 29.7633, "lon": -95.3633, "country_code": "US", "confidence": 0.95}
+    {"name": "Houston", "lat": 29.7633, "lon": -95.3633, "country_code": "US", "population": 2314157,
+     "confidence": 0.95, "is_ambiguous": true, "entity_type": "city"}
   ],
-  "needs": ["Medical", "Rescue/Evacuation"]
+  "needs": ["Medical", "Rescue/Evacuation"],
+  "quantities": [{"kind": "trapped", "count": 5}],
+  "model_version": "706a502aa89f"
 }
 ```
 

@@ -1,10 +1,15 @@
 {
-  "urgent_needs_survival_recall": 0.2417,
+  "urgent_needs_survival_recall": 0.3156,
   "urgent_needs_sample_count": 1651,
-  "injury_medical_recall": 0.1058,
+  "injury_medical_recall": 0.1339,
   "injury_sample_count": 4236,
-  "infra_power_transport_recall": 0.0237,
+  "infra_power_transport_recall": 0.0629,
   "infra_sample_count": 6044,
-  "donation_recall": 0.3133,
-  "donation_sample_count": 12162
+  "donation_recall": 0.5065,
+  "donation_sample_count": 12162,
+  "missing_persons_recall": 0.8715,
+  "missing_sample_count": 179,
+  "displaced_shelter_rescue_recall": 0.8586,
+  "displaced_sample_count": 2136,
+  "tweets_without_any_need_pct": 64.56
 }

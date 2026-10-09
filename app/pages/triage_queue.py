@@ -3,80 +3,122 @@ Priority Triage Queue and Explainability page for CrisisLens.
 Ranked emergency dispatch queue with row selection and granular decision attribution.
 """
 
-import streamlit as st
 import pandas as pd
-from app.ui.components import render_triage_detail_panel
+import streamlit as st
+
+from src.config import NEED_TAXONOMY
+from src.utils import as_list
+from app.ui.cache import cached_briefing_html, cached_csv, df_signature
+from app.ui.components import describe_active_filters, render_empty, render_triage_detail_panel
+
+QUEUE_ROWS = 200
+
+SORT_OPTIONS = {
+    "Urgency (highest first)": (["urgency_score", "confidence"], [False, False]),
+    "Confidence (lowest first)": (["confidence", "urgency_score"], [True, False]),
+    "Newest first": (["timestamp", "urgency_score"], [False, False]),
+}
+
+def _queue_table(rows: pd.DataFrame) -> pd.DataFrame:
+    """Compact display table for the queue (one row per tweet)."""
+    return pd.DataFrame({
+        "Rank": range(1, len(rows) + 1),
+        "Level": rows["urgency_level"].to_numpy(),
+        "Score": rows["urgency_score"].to_numpy(dtype=float),
+        "Category": rows["category"].to_numpy(),
+        "Confidence": rows["confidence"].to_numpy(dtype=float),
+        "Places": [", ".join(str(p) for p in as_list(v)[:2]) for v in rows["locations"]] if "locations" in rows else "",
+        "Needs": [", ".join(str(n) for n in as_list(v)[:3]) for v in rows["needs"]] if "needs" in rows else "",
+        "Report": rows["raw_unescaped_text"].astype(str).to_numpy(),
+    })
 
 def render_page(df: pd.DataFrame, pipeline: any):
-    st.markdown("<h3 style='margin-top:0;color:#E6EDF7;'>🚨 Priority Triage Queue & Explainability</h3>", unsafe_allow_html=True)
-    st.markdown("Ranked emergency queue ordered by urgency score. Inspect individual dispatches to audit AI and rule engine attribution.")
+    st.markdown("<div class='cl-muted' style='margin-bottom:1rem;'>Ranked emergency queue. Select a row to audit the machine-learning classification and rule-engine signal attributions behind it.</div>", unsafe_allow_html=True)
 
     if df.empty:
-        st.warning("No dispatches match the current filter criteria.")
+        render_empty("No tweets match the current filter criteria.")
         return
 
-    # Sort queue by urgency_score descending
-    sorted_df = df.sort_values(["urgency_score", "confidence"], ascending=[False, False]).copy()
-
     # Filters within Triage
-    col_search, col_need = st.columns([3, 1])
+    col_search, col_need, col_sort = st.columns([3, 1.4, 1.6])
     with col_search:
-        queue_search = st.text_input("Filter Triage Dispatches", placeholder="Search text or location in queue...", label_visibility="collapsed")
+        queue_search = st.text_input("Filter triage reports", placeholder="Search text or location in queue...", label_visibility="collapsed")
     with col_need:
-        need_filter = st.selectbox(
-            "Need Type Filter",
-            ["All Needs", "Medical", "Water", "Food", "Shelter", "Rescue/Evacuation", "Power/Utilities", "Transport/Roads", "Communication", "Missing persons", "Donations/Volunteering"],
-            label_visibility="collapsed"
-        )
+        need_filter = st.selectbox("Need type filter", ["All Needs", *NEED_TAXONOMY], label_visibility="collapsed")
+    with col_sort:
+        sort_label = st.selectbox("Sort queue", list(SORT_OPTIONS), label_visibility="collapsed")
+
+    sort_cols, ascending = SORT_OPTIONS[sort_label]
+    sort_cols = [c for c in sort_cols if c in df.columns]
+    sorted_df = df.sort_values(sort_cols, ascending=ascending[:len(sort_cols)], kind="mergesort").copy()
 
     if queue_search.strip():
         q = queue_search.strip().lower()
-        sorted_df = sorted_df[
-            sorted_df["clean_text"].str.lower().str.contains(q, na=False) |
-            sorted_df["raw_unescaped_text"].str.lower().str.contains(q, na=False)
-        ]
+        mask = pd.Series(False, index=sorted_df.index)
+        for col in ("clean_text", "raw_unescaped_text"):
+            if col in sorted_df.columns:
+                mask |= sorted_df[col].astype(str).str.lower().str.contains(q, na=False, regex=False)
+        if "locations" in sorted_df.columns:
+            mask |= sorted_df["locations"].apply(lambda locs: any(q in str(loc).lower() for loc in as_list(locs)))
+        sorted_df = sorted_df[mask]
 
     if need_filter != "All Needs" and "needs" in sorted_df.columns:
-        sorted_df = sorted_df[sorted_df["needs"].apply(lambda n_list: need_filter in (n_list if isinstance(n_list, list) else []))]
+        sorted_df = sorted_df[sorted_df["needs"].apply(lambda needs: need_filter in as_list(needs))]
 
-    st.markdown(f"**Triage Dispatches in Queue**: `{len(sorted_df):,}`")
+    if sorted_df.empty:
+        render_empty("No reports in the queue match this search. Clear the search or the need filter.")
+        return
 
-    # Selection index
-    top_subset = sorted_df.head(100).reset_index(drop=True)
-
-    # Render interactive table
-    selected_idx = st.selectbox(
-        "Select Dispatch to Inspect (Top 100 in Queue):",
-        options=list(range(len(top_subset))),
-        format_func=lambda i: f"#{i+1} | [{top_subset.loc[i, 'urgency_level']}] Score {top_subset.loc[i, 'urgency_score']} | {top_subset.loc[i, 'category']} | {top_subset.loc[i, 'raw_unescaped_text'][:70]}..."
+    shown = min(len(sorted_df), QUEUE_ROWS)
+    st.markdown(
+        f"**Triage reports in queue**: `{len(sorted_df):,}`"
+        + (f" · showing the first `{shown}`" if shown < len(sorted_df) else "")
     )
 
-    if selected_idx is not None and not top_subset.empty:
-        selected_row = top_subset.iloc[selected_idx]
-        st.markdown("---")
-        render_triage_detail_panel(selected_row, pipeline)
+    top_subset = sorted_df.head(QUEUE_ROWS).reset_index(drop=True)
+    event = st.dataframe(
+        _queue_table(top_subset),
+        key="triage_table",
+        hide_index=True,
+        height=380,
+        on_select="rerun",
+        selection_mode="single-row",
+        column_config={
+            "Rank": st.column_config.NumberColumn(width="small"),
+            "Level": st.column_config.TextColumn(width="small"),
+            "Score": st.column_config.ProgressColumn("Urgency", min_value=0, max_value=10, format="%.1f", width="small"),
+            "Confidence": st.column_config.ProgressColumn(min_value=0, max_value=1, format="percent", width="small"),
+            "Report": st.column_config.TextColumn(width="large"),
+        },
+    )
 
-    # Downloads
-    st.markdown("---")
+    selected_rows = event.selection.rows if event is not None and event.selection else []
+    selected_idx = selected_rows[0] if selected_rows and selected_rows[0] < len(top_subset) else 0
+    if not selected_rows:
+        st.caption("Showing the top-ranked report. Select any row above to inspect it.")
+
+    st.markdown("<div style='height:0.5rem;'></div>", unsafe_allow_html=True)
+    render_triage_detail_panel(top_subset.iloc[selected_idx], pipeline)
+
+    # Downloads (generated from cached results, so they do not slow down every click)
+    st.markdown("<div style='height:1rem;'></div>", unsafe_allow_html=True)
+    sig = df_signature(sorted_df)
     c1, c2 = st.columns(2)
     with c1:
-        csv_data = sorted_df.to_csv(index=False).encode("utf-8")
         st.download_button(
-            "📥 Download Triage Queue as CSV",
-            data=csv_data,
+            "Download triage queue as CSV",
+            data=cached_csv(sorted_df, sig),
             file_name="crisislens_triage_queue.csv",
             mime="text/csv",
-            use_container_width=True
+            width="stretch",
+            on_click="ignore"
         )
     with c2:
-        # Self-contained HTML report
-        from src.briefing import generate_html_briefing, generate_situation_summary
-        summary = generate_situation_summary(sorted_df)
-        html_doc = generate_html_briefing(sorted_df, summary, [], [], {})
         st.download_button(
-            "📄 Download Triage Report as HTML",
-            data=html_doc.encode("utf-8"),
+            "Download triage report as HTML",
+            data=cached_briefing_html(sorted_df, sig, describe_active_filters(queue_search)),
             file_name="crisislens_triage_report.html",
             mime="text/html",
-            use_container_width=True
+            width="stretch",
+            on_click="ignore"
         )

@@ -1,11 +1,11 @@
 {
   "total_tweets": 43403,
-  "total_extracted_entity_mentions": 27480,
-  "total_geocoded_mentions": 23443,
-  "mention_geocoding_rate_pct": 85.31,
-  "unique_raw_places_detected": 2155,
-  "unique_places_geocoded": 597,
-  "place_resolution_rate_pct": 27.7,
+  "total_extracted_entity_mentions": 26617,
+  "total_geocoded_mentions": 24463,
+  "mention_geocoding_rate_pct": 91.91,
+  "unique_raw_places_detected": 1886,
+  "unique_places_geocoded": 525,
+  "place_resolution_rate_pct": 27.84,
   "junk_entities_filtered_list": [
     "alert",
     "am",

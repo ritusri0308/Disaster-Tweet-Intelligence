@@ -11,26 +11,19 @@ from src.config import (
     APP_VERSION,
     DISCLAIMER
 )
+from app.ui.components import esc, render_callout
 
 def render_page(df: any = None, pipeline: any = None):
-    st.markdown(f"<h3 style='margin-top:0;color:#22D3EE;'>ℹ️ About {APP_NAME} & Data Governance</h3>", unsafe_allow_html=True)
-    st.markdown(f"**Version**: `{APP_VERSION}` | **Tagline**: *{APP_TAGLINE}*")
+    st.markdown(f"<div class='cl-muted' style='margin-bottom:1rem;'>{esc(APP_NAME)} version {esc(APP_VERSION)} · {esc(APP_TAGLINE)}</div>", unsafe_allow_html=True)
 
-    st.markdown(
-        f"""
-        <div style='background:rgba(234, 179, 8, 0.1);border-left:4px solid #EAB308;padding:12px 16px;border-radius:6px;font-size:0.95rem;color:#FEF08A;margin:1rem 0;'>
-            <strong>Operational Decision-Support Disclaimer:</strong><br>
-            {DISCLAIMER}
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    render_callout(DISCLAIMER, "warn", "Operational decision-support notice:")
 
     st.markdown("""
     ### 1. System Scope & Benchmark Data
-    - **Mode**: **HISTORICAL REPLAY**. All records represent historical disaster benchmark data from **2016 to 2019**. This deployment is not a live Twitter/X streaming scraper.
-    - **Geographic Precision**: The dataset does not contain physical GPS coordinates. Map points are resolved via offline entity recognition and GeoNamesCache gazetteer priors to city/state centroids.
+    - **Mode**: **HISTORICAL REPLAY**. All records represent historical disaster benchmark data from **2016 to 2019**. This deployment is not an active social media streaming service.
+    - **Geographic Precision**: The dataset does not contain physical GPS coordinates. Map points are resolved via offline entity recognition and GeoNamesCache gazetteer priors (plus a small curated list of towns and islands) to city, regional, or country centroids.
     - **Emergency Definition**: In this taxonomy, the **Emergency** category represents casualty reports (`injured_or_dead_people`).
+    - **Reported figures**: Casualty and displacement numbers are extracted from tweet text. They are claims made in tweets, not verified counts.
 
     ---
 
@@ -49,7 +42,7 @@ def render_page(df: any = None, pipeline: any = None):
 
     | Raw HumAID Label | Project Category | Description |
     | :--- | :--- | :--- |
-    | `injured_or_dead_people` | **Emergency** | Casualty dispatches (injured or deceased individuals) |
+    | `injured_or_dead_people` | **Emergency** | Casualty reports (injured or deceased individuals) |
     | `requests_or_urgent_needs` | **Help Request** | Urgent calls for water, food, medical care, or rescue |
     | `infrastructure_and_utility_damage` | **Damage Report** | Damaged roads, collapsed bridges, power grid blackouts |
     | `caution_and_advice` | **Information/Update** | Official advisories, evacuation instructions, warnings |
@@ -64,8 +57,9 @@ def render_page(df: any = None, pipeline: any = None):
     ---
 
     ### 4. Technical Architecture
-    - **Feature Representation**: Sublinear TF-IDF (unigrams + bigrams), text features (uppercase ratio, punctuation intensity, retweet indicators).
-    - **Classifier**: Calibrated Logistic Regression with balanced class weighting, selected via dev Macro-F1.
-    - **NER & Geocoding**: spaCy `en_core_web_sm` coupled with an offline `geonamescache` resolver and per-event geographic priors.
-    - **Urgency Scoring**: Explainable rule engine producing 0-10 priority scores and waterfall attribution breakdown.
+    - **Feature Representation**: Sublinear TF-IDF (unigrams + bigrams) over cleaned tweet text.
+    - **Classifier**: The best of Naive Bayes, Logistic Regression, Linear SVM and Random Forest by dev macro-F1. When candidates are within 0.005 of each other the simpler model is chosen. Confidence is the model's predicted probability; the Model Observatory shows how well it is calibrated.
+    - **NER & Geocoding**: spaCy `en_core_web_sm` coupled with an offline `geonamescache` resolver. Countries and US states take precedence over same-named towns, and per-event geographic priors disambiguate the rest.
+    - **Urgency Scoring**: Explainable rule engine producing 0-10 priority scores and a waterfall attribution breakdown. Reports of deaths raise severity but do not by themselves reach CRITICAL, which is reserved for active calls for help.
+    - **Humanitarian Needs**: Phrase lexicons for ten need types, evaluated against HumAID labels as proxies in the reports.
     """)

@@ -81,9 +81,13 @@
 - `src/nlquery.py`: Deterministic natural language query parser for filter synthesis.
 - `src/briefing.py`: Executive Markdown and self-contained HTML situation report generator.
 - `src/database.py`: SQLite schema management, batch insertion, parameterized human feedback storage.
-- `src/pipeline.py`: End-to-end processing pipeline orchestrator.
-- `api/main.py`: Production FastAPI REST microservice.
-- `app/`: Multi-page command-center Streamlit user interface.
+- `src/pipeline.py`: End-to-end processing pipeline orchestrator; stamps every row with the model version that scored it.
+- `src/model_registry.py`: Model content fingerprints, metadata sidecar (`best_classifier.meta.json`), and the health check that flags a missing, implausibly small, or out-of-sync model.
+- `src/entities.py`: Extraction of reported casualty / displacement figures ("death toll 413", "5 people trapped").
+- `src/utils.py`: `as_list` / `normalize_list_columns`, which make list columns behave the same whether loaded from Parquet (numpy arrays), SQLite or CSV (JSON text).
+- `retrain_with_feedback.py`: Applies operator corrections by split and retrains behind a regression gate.
+- `api/main.py`: Production FastAPI REST microservice (analysis, feedback, surges, incidents, health/readiness).
+- `app/`: Multi-page command-center Streamlit user interface. `app/ui/theme.py` is the only place colours are defined; `app/ui/cache.py` caches the expensive analytics.
 
 ## 3. Key Design Decisions
 
@@ -96,5 +100,17 @@
 3. **Additive Waterfall Scoring**:
    Urgency scores are not opaque black boxes: each score is decomposed into explicit positive and negative contributions (category base, critical keywords, shout ratio, donation damping) that sum exactly to the final score.
 
-4. **Calibrated Confidences & ECE**:
-   Decision-support tools must communicate calibrated probabilities. Linear models use Platt scaling or Sigmoid calibration (`CalibratedClassifierCV`) to output accurate posterior probabilities.
+4. **Honest Confidences & ECE**:
+   Confidence is the model's predicted probability, and the Model Observatory reports its expected calibration error. Class-balanced training deliberately trades some calibration for recall on rare classes, so the dashboard shows the measured ECE rather than claiming calibration.
+
+5. **Model Integrity**:
+   A model is identified by a content fingerprint. The processed dataset is stamped with the fingerprint of the model that produced it, and the dashboard and API compare it with the model currently loaded. A model with an implausibly small vocabulary (the signature of a test fixture overwriting production) is reported as `degraded`, and the API answers `503` rather than guessing when no model is loaded. Model selection prefers the simpler model whenever candidates are within 0.005 dev macro-F1, because differences that small are noise on the dev split.
+
+6. **Test Isolation**:
+   `tests/conftest.py` redirects the data, models and reports directories to a temp location (`CRISISLENS_*_DIR`) before any project module is imported, so the suite can never overwrite production artifacts. `tests/test_isolation.py` fails if that regresses.
+
+7. **Feedback Loop Hygiene**:
+   Operator corrections are applied by split: train-split corrections relabel training data, live (API) corrections add new rows, and dev/test corrections are never trained on so the benchmark stays clean. Tweets already reviewed are hidden from the review queue, and the latest decision per tweet wins.
+
+8. **Geocoding Precedence**:
+   Countries and US states are resolved before cities, curated places fill gaps in the GeoNames cache, macro-regions and storm names are never plotted, and a city that only matches outside the event's expected countries keeps its name but is not drawn on the map.

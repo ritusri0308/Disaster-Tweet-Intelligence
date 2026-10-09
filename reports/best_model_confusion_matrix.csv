@@ -1,6 +1,6 @@
 ,Pred_Damage Report,Pred_Emergency,Pred_General,Pred_Help Request,Pred_Information/Update
-True_Damage Report,1088,10,24,4,71
+True_Damage Report,1089,10,23,4,71
 True_Emergency,7,793,19,5,16
-True_General,42,46,982,91,239
-True_Help Request,5,1,15,242,65
-True_Information/Update,232,54,386,246,3922
+True_General,42,46,987,91,234
+True_Help Request,5,1,15,239,68
+True_Information/Update,230,55,382,245,3928

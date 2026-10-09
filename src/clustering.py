@@ -14,7 +14,28 @@ from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.decomposition import TruncatedSVD
 from sklearn.cluster import MiniBatchKMeans
 
+from src.utils import as_list
+
 logger = logging.getLogger(__name__)
+
+def _select_sample(event_df: pd.DataFrame, max_sample: int, random_state: int = 42) -> pd.DataFrame:
+    """
+    Choose at most ``max_sample`` tweets of one event to cluster.
+
+    Half of the budget goes to the most urgent tweets (so critical reports are never left out just
+    because they appear late in the file); the other half is a random sample of the remainder so the
+    clusters still reflect the event's overall conversation.
+    """
+    event_df = event_df.reset_index(drop=True)
+    if len(event_df) <= max_sample:
+        return event_df.copy()
+    if "urgency_score" not in event_df.columns:
+        return event_df.sample(n=max_sample, random_state=random_state).sort_index()
+
+    top = event_df.nlargest(max_sample // 2, "urgency_score")
+    rest = event_df.drop(top.index)
+    extra = rest.sample(n=max_sample - len(top), random_state=random_state)
+    return pd.concat([top, extra]).sort_index()
 
 def cluster_event_incidents(
     df: pd.DataFrame,
@@ -36,7 +57,7 @@ def cluster_event_incidents(
         if event_df.empty:
             continue
 
-        sample_df = event_df.head(max_sample_per_event).copy()
+        sample_df = _select_sample(event_df, max_sample_per_event)
         texts = sample_df["clean_text"].fillna("").astype(str).tolist()
 
         if len(texts) < 2:
@@ -51,20 +72,24 @@ def cluster_event_incidents(
         # Cosine similarity matrix
         sim_mat = cosine_similarity(tfidf_mat)
 
-        # Connected components / greedy clustering
-        assigned = set()
-        for i in range(len(sample_df)):
-            if i in assigned:
+        # Greedy clustering seeded from the most urgent tweets first. Each tweet joins at most one incident:
+        # only still-unassigned neighbours count towards a cluster.
+        if "urgency_score" in sample_df.columns:
+            seed_order = np.argsort(-sample_df["urgency_score"].fillna(0).to_numpy(dtype=float), kind="stable")
+        else:
+            seed_order = np.arange(len(sample_df))
+        assigned = np.zeros(len(sample_df), dtype=bool)
+        for i in seed_order:
+            if assigned[i]:
                 continue
 
-            # Neighbors with similarity >= threshold
-            neighbors = np.where(sim_mat[i] >= similarity_threshold)[0]
+            # Unassigned neighbors with similarity >= threshold (the seed itself is always one)
+            neighbors = np.where((sim_mat[i] >= similarity_threshold) & ~assigned)[0]
             if len(neighbors) < 2:
                 # Require at least 2 tweets to form an incident cluster
                 continue
 
-            for n_idx in neighbors:
-                assigned.add(n_idx)
+            assigned[neighbors] = True
 
             cluster_rows = sample_df.iloc[neighbors]
             size = len(cluster_rows)
@@ -86,8 +111,7 @@ def cluster_event_incidents(
             places = set()
             if "locations" in cluster_rows.columns:
                 for l_list in cluster_rows["locations"]:
-                    if isinstance(l_list, list):
-                        places.update(l_list)
+                    places.update(as_list(l_list))
 
             # Time span
             ts_series = pd.to_datetime(cluster_rows["timestamp"], errors="coerce").dropna()

@@ -1,0 +1,31 @@
+# Never bake licensed data, trained models, or local state into an image: mount them as volumes instead
+# (see docker-compose.yml).
+data/
+models/
+reports/
+docs/
+tests/
+
+# VCS, caches, virtualenvs
+.git
+.github
+.venv
+venv
+env
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local configuration and tooling
+.env
+.claude/
+.idea/
+.vscode/
+*.db
+*.sqlite
+*.sqlite3
+*.parquet
+*.joblib
